@@ -30,9 +30,10 @@
                 <el-tag type="warning" v-else>三级</el-tag>
             </template>
             <!-- 操作 -->
-            <template slot="opt" slot-scope="scope">
-                   <el-button type="success" icon="el-icon-edit" size="mini">编辑</el-button>
-                    <el-button type="danger" icon="el-icon-edit" size="mini">删除</el-button>
+            <template slot="opt" slot-scope="scope" width ="180px">
+                <!-- 你好难找啊，卧槽 -->
+                   <el-button type="success" icon="el-icon-edit" size="mini" @click="editCate(scope.row.cat_id)">编辑</el-button>
+                    <el-button type="danger" icon="el-icon-edit" size="mini" @click="detectCate(scope.row.cat_id)">删除</el-button>
                    
             </template>
           </tree-table>
@@ -70,6 +71,27 @@
                 <el-button type="primary" @click="addcate()">确 定</el-button>
             </span>
          </el-dialog>
+    
+    <!-- 编辑对话框 -->
+     <el-dialog
+            title="添加分类"
+            :visible.sync="editdialogVisible"
+            width="50%" @close="editCateDiaologClosed()">
+           <!-- 添加分类的表单 -->
+           <el-form :model="editcateForm" :rules="editrules" ref="editcateFormRef" label-width="100px">
+            <el-form-item label="分类名称:" prop="cat_name">
+                <el-input v-model="editcateForm.cat_name"></el-input>
+            </el-form-item>
+           </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="editdialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="editcate()">确 定</el-button>
+            </span>
+         </el-dialog>
+  
+  
+   
+  
     </div>
 </template>
 
@@ -81,6 +103,8 @@ export default {
             cateList:[],
             // 控制添加分类对话框
             adddialogVisible:false,
+            // 控制编辑分类对话框
+            editdialogVisible:false,
             // 分页
             querInfo:{
                 type: 3,
@@ -112,6 +136,12 @@ export default {
                 ],
                 cat_level:[]
             },
+            // 添加编辑的验证规则对象
+            editrules:{ 
+            cat_name:[
+                   {required: true,message:'请输入分类',trigger: 'blur'}
+                ],
+            },
             //父级分类的列表
             parentsCateList:[],
             // 制定级联选择器的配置对象
@@ -121,7 +151,9 @@ export default {
                 children:'children'
             },
             // 选中的父级分类的id数组
-            selectionsKeys:[]
+            selectionsKeys:[],
+            // 编辑数组列表
+            editcateForm:{}
     }
     },
     created() {
@@ -212,8 +244,63 @@ export default {
             this.selectionsKeys = []
             this.addcateForm.cat_level = 0
             this.addcateForm.cat_pid = 0
+        },
+        // 监听对话框的关闭事件,重置表单数据
+        editCateDiaologClosed(){
+            this.$refs.editcateFormRef.resetFields()
+    
+        },
+        // 编辑对话框
+       async editCate(id){
+           
+           const {data:res} = await this.$http.get('categories/'+id)
+
+            if(res.meta.status !==200) return this.$message.error('获取列表失败')
+
+            this.editcateForm = res.data
+
+
+            this.editdialogVisible = true
+        },
+        // 完成编辑调用接口
+        editcate(){
+            this.$refs.editcateFormRef.validate(async valid=>{
+          if(!valid)return
+
+          const {data:res} = await this.$http.put('categories/'+this.editcateForm.cat_id,{cat_name:this.editcateForm.cat_name})
+
+          if(res.meta.status !== 200)  return this.$message.error('编辑失败')
+
+          this.$message.success('编辑成功')
+
+            this.getcateList()
+          this.editdialogVisible = false
+
+              })
+        },
+        // 点击按钮删除数据
+      async  detectCate(id){
+                 // 弹框询问用户是否删除数据
+      const res = await this.$confirm('此操作将永久删除该分类 是否继续?', '提示',
+       {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).catch(err=>{
+          return err
+        })
+        if(res !=='confirm'){
+          return this.$message.info('已取消')
         }
-    },
+       // console.log(id)
+        const {data: re} = await this.$http.delete('categories/'+id)
+
+            if(res.meta.status !==200) return this.$message.error('删除数据失败')
+
+            this.$message.success('删除数据成功')
+            this.getcateList()
+        }
+      },
 }
 </script>
 

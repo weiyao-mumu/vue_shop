@@ -179,7 +179,7 @@ export default {
           username:[
           {required:true,message:'请如输入用户名',
           trigger:'blur'},
-          {min:3,max:10,message:'用户名的长度在3-10个字符之间',
+          {min:2,max:10,message:'用户名的长度在3-10个字符之间',
            trigger:'blur'}
         ],
          password:[
